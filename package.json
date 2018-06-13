@@ -1,0 +1,16 @@
+{
+  "name": "notes-sametime-emojis",
+  "version": "0.1.0",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Nils Weber <me@nilsweb.de>",
+  "license": "ISC",
+  "dependencies": {
+    "emoji-datasource": "^4.0.4",
+    "sharp": "^0.20.2",
+    "xml": "^1.0.1"
+  }
+}
