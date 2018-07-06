@@ -26,8 +26,6 @@ const lib = require('./lib')
 
 // Target Configuration.
 const targetConfiguration = {
-  emojiSet: 'apple',
-  emojiSize: 16,
   folder: path.join(__dirname, 'build'),
   targets: [
     { set: 'apple', size: 16 },
@@ -54,11 +52,19 @@ const sourceConfiguration = {
 
 
 // Get all emojis with name.
-const emojis = emojiData.filter(emoji => emoji.name !== null)
+const emojis = emojiData.filter(emoji => emoji.name !== null && emoji.category !== 'Skin Tones')
 
 // Group emojis by category.
 const categorizedEmojis = Array.from(new Set(emojis.map(emoji => emoji.category)))
   .map(category => ({ name: category, emojis: emojis.filter(emoji => emoji.category === category) }))
+  .map(category => {
+    const skinVariations = category.emojis
+      .filter(emoji => emoji.skin_variations)
+      .map(emoji => Object.values(emoji.skin_variations).map(skinVariation => ({ ...skinVariation, category: category.name, name: emoji.name })))
+      .reduce((acc, current) => acc.concat(current), [])
+    category.emojis.push(...skinVariations)
+    return category
+  })
 
 // Create build directory if it doesn't exist.
 if (!fs.existsSync(targetConfiguration.folder)) fs.mkdirSync(targetConfiguration.folder)
