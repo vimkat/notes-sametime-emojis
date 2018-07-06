@@ -1,16 +1,30 @@
+//
+// Notes Sametime Emojis
+// main.js
+//
+// (C) Nils Weber | nilsweb
+// Code licensed under MIT
+//
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 const fs = require('fs')
 const path = require('path')
+
 const sharp = require('sharp')
 const xml = require('xml')
 const emojiData = require('emoji-datasource')
+const archiver = require('archiver')
 
 const lib = require('./lib')
 
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-/**
- * Target Configuration.
- */
+
+// Target Configuration.
 const targetConfiguration = {
   emojiSet: 'apple',
   emojiSize: 16,
@@ -27,9 +41,7 @@ const targetConfiguration = {
   ],
 }
 
-/**
- * Source Configuration.
- */
+// Source Configuration.
 const sourceConfiguration = {
   getPathForTarget: target => path.join(__dirname, 'node_modules/emoji-datasource/img', target, 'sheets/32.png'),
   emojiSize: 32,
@@ -37,6 +49,8 @@ const sourceConfiguration = {
   spritesheetCache: { }
 }
 
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 // Get all emojis with name.
@@ -49,6 +63,8 @@ const categorizedEmojis = Array.from(new Set(emojis.map(emoji => emoji.category)
 // Create build directory if it doesn't exist.
 if (!fs.existsSync(targetConfiguration.folder)) fs.mkdirSync(targetConfiguration.folder)
 
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 // Process each target.
@@ -71,16 +87,20 @@ targetConfiguration.targets.forEach(target => {
   const spritesheet = sourceConfiguration.spritesheetCache[target.set]
 
   // Generate individual emoji images.
-  categorizedEmojis.forEach(category => {
+  categorizedEmojis.forEach(async (category) => {
 
-    // Create output folder if it doesn't exist.
-    const basePath = path.join(targetPath, category.name)
-    if (!fs.existsSync(basePath)) fs.mkdirSync(basePath)
+    // Create target archive and write stream.
+    const categoryArchive = archiver('zip')
+    categoryArchive.pipe(fs.createWriteStream(path.join(targetPath, `${category.name}.zip`)))
 
-    category.emojis.forEach(emoji => {
+    // Process all emojis in this category.
+    const emojiBufferPromises = category.emojis.map(async (emoji) => {
+
+      // Calcualte the actual size per emoji (relative to the entire spritesheet).
       const emojiOffset = sourceConfiguration.emojiSize + (sourceConfiguration.emojiPadding * 2)
 
-      spritesheet
+      // Get the image buffer for the current emoji.
+      const buffer = await spritesheet
         .clone()
         .extract({
           left: emoji.sheet_x * emojiOffset + sourceConfiguration.emojiPadding,
@@ -89,15 +109,17 @@ targetConfiguration.targets.forEach(target => {
           height: sourceConfiguration.emojiSize,
         })
         .resize(target.size)
-        .toFile(path.join(basePath, emoji.image))
-        .then(() => console.log('[✓] ' + emoji.name))
-        .catch((err) => console.log('[✗] ' + emoji.name, err))
+        .png()
+        .toBuffer()
+
+      return { name: emoji.image, buffer }
     })
-  })
 
+    // Add all emoji buffers to the archive.
+    const emojiBuffers = await Promise.all(emojiBufferPromises)
+    emojiBuffers.forEach(({ buffer, name }) => categoryArchive.append(buffer, { name }))
 
-  // Generate XML files for palettes.
-  categorizedEmojis.forEach(category => {
+    // Generate XML files for palettes.
     const xmlObject = {}
     xmlObject.palette = category.emojis.map(emoji => ({
       item: [
@@ -110,10 +132,15 @@ targetConfiguration.targets.forEach(target => {
       ]
     }))
 
-
-    // Generate XML string and save it to disk.
+    // Generate XML string and apoend it to the archive.
     const xmlString = xml(xmlObject, { declaration: true })
-    fs.writeFile(path.join(targetPath, category.name, 'palette.xml'), xmlString, err => console.log('XML: ', err || '✓'))
+    categoryArchive.append(xmlString, { name: 'palette.xml' })
+
+    // FInalize the archive
+    categoryArchive.finalize()
   })
 })
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
