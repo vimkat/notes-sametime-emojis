@@ -1,0 +1,17 @@
+{
+  "name": "notes-sametime-emojis",
+  "version": "0.1.0",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "build": "node ."
+  },
+  "author": "Nils Weber <me@nilsweb.de>",
+  "license": "ISC",
+  "dependencies": {
+    "archiver": "^2.1.1",
+    "emoji-datasource": "^4.1.0",
+    "sharp": "^0.20.5",
+    "xml": "^1.0.1"
+  }
+}
