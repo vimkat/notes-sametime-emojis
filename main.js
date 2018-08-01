@@ -131,8 +131,8 @@ targetConfiguration.targets.forEach(target => {
       item: [
         { name: { _cdata: emoji.name } },
         { imgfile: emoji.image },
-        { imgWidth: targetConfiguration.emojiSize },
-        { imgHeight: targetConfiguration.emojiSize },
+        { imgWidth: target.size },
+        { imgHeight: target.size },
         { alttext: { _cdata: emoji.name } },
         { keyboard: emoji.short_name ? { _cdata: `:${emoji.short_name}:` } : undefined },
       ]
