@@ -97,7 +97,7 @@ targetConfiguration.targets.forEach(target => {
 
     // Create target archive and write stream.
     const categoryArchive = archiver('zip')
-    categoryArchive.pipe(fs.createWriteStream(path.join(targetPath, `${category.name}.zip`)))
+    categoryArchive.pipe(fs.createWriteStream(path.join(targetPath, `${sanitizeFilename(category.name)}.zip`)))
 
     // Process all emojis in this category.
     const emojiBufferPromises = category.emojis.map(async (emoji) => {
@@ -146,6 +146,14 @@ targetConfiguration.targets.forEach(target => {
     categoryArchive.finalize()
   })
 })
+
+
+function sanitizeFilename(filename) {
+  return filename
+    .replace(/&/g, 'and')
+    .replace(/\s/g, '_')
+    .toLowerCase()
+}
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
